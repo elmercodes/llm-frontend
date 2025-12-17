@@ -28,8 +28,11 @@ export type Conversation = {
   title: string;
   messages: Message[];
   attachments: Attachment[];
+  createdAt: number;
+  lastUpdatedAt: number;
 };
 
+const seedTimestamp = Date.now();
 const seedConversations: Conversation[] = [
   {
     id: "conv-aurora",
@@ -50,7 +53,9 @@ const seedConversations: Conversation[] = [
         role: "user",
         content: "Start with a timeline and include key risks."
       }
-    ]
+    ],
+    createdAt: seedTimestamp - 1000 * 60 * 60 * 2,
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 45
   },
   {
     id: "conv-research",
@@ -63,7 +68,9 @@ const seedConversations: Conversation[] = [
         content:
           "I summarized the top findings and highlighted the gaps you can validate next week."
       }
-    ]
+    ],
+    createdAt: seedTimestamp - 1000 * 60 * 60 * 6,
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 60 * 3
   }
 ];
 
@@ -86,6 +93,14 @@ export default function ChatApp() {
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeId
   );
+  const sortedConversations = React.useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      if (a.lastUpdatedAt !== b.lastUpdatedAt) {
+        return b.lastUpdatedAt - a.lastUpdatedAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+  }, [conversations]);
 
   const updateConversation = React.useCallback(
     (id: string, updater: (conversation: Conversation) => Conversation) => {
@@ -99,6 +114,7 @@ export default function ChatApp() {
   );
 
   const handleNewChat = () => {
+    const now = Date.now();
     const newConversation: Conversation = {
       id: createId(),
       title: "New chat",
@@ -110,7 +126,9 @@ export default function ChatApp() {
           content:
             "Tell me what you want to build, and I will help you map the next steps."
         }
-      ]
+      ],
+      createdAt: now,
+      lastUpdatedAt: now
     };
 
     setConversations((prev) => [newConversation, ...prev]);
@@ -146,6 +164,7 @@ export default function ChatApp() {
     if (!trimmed) return;
 
     const conversationId = activeConversation.id;
+    const now = Date.now();
     const userMessage: Message = {
       id: createId(),
       role: "user",
@@ -160,7 +179,8 @@ export default function ChatApp() {
 
     updateConversation(conversationId, (conversation) => ({
       ...conversation,
-      messages: [...conversation.messages, userMessage, assistantMessage]
+      messages: [...conversation.messages, userMessage, assistantMessage],
+      lastUpdatedAt: now
     }));
 
     for await (const chunk of mockStreamAssistantReply(trimmed)) {
@@ -226,7 +246,7 @@ export default function ChatApp() {
     <div className="relative flex h-full w-full min-w-0 overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
       <div className="hidden md:flex">
         <Sidebar
-          conversations={conversations}
+          conversations={sortedConversations}
           activeId={activeId}
           attachments={activeConversation?.attachments ?? []}
           onNewChat={handleNewChat}
@@ -243,7 +263,7 @@ export default function ChatApp() {
           />
           <div className="relative z-10 h-full">
             <Sidebar
-              conversations={conversations}
+              conversations={sortedConversations}
               activeId={activeId}
               attachments={activeConversation?.attachments ?? []}
               onNewChat={handleNewChat}

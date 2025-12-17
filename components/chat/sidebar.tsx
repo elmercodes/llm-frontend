@@ -84,15 +84,25 @@ export default function Sidebar({
                 className={cn(
                   "w-full rounded-2xl border px-4 py-3 text-left transition",
                   isActive
-                    ? "border-chip bg-chip/90 text-chip-text shadow-glow"
+                    ? "border-active-border bg-active-bg text-active-text shadow-glow"
                     : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80"
                 )}
                 onClick={() => onSelectConversation(conversation.id)}
               >
-                <div className="text-sm font-semibold text-ink">
+                <div
+                  className={cn(
+                    "text-sm font-semibold",
+                    isActive ? "text-active-text" : "text-ink"
+                  )}
+                >
                   {conversation.title}
                 </div>
-                <div className="mt-1 text-xs text-muted">
+                <div
+                  className={cn(
+                    "mt-1 text-xs",
+                    isActive ? "text-active-text/80" : "text-muted"
+                  )}
+                >
                   {lastMessage?.content ?? "No messages yet."}
                 </div>
               </button>
