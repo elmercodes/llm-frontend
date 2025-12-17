@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-canvas: 247 244 239;
+  --color-panel: 255 255 255;
+  --color-ink: 31 41 51;
+  --color-muted: 107 114 128;
+  --color-border: 228 224 218;
+  --color-accent: 197 214 208;
+  --color-accent-strong: 90 124 115;
+  --color-assistant: 239 244 242;
+  --color-user: 255 247 230;
+  --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: rgb(var(--color-ink));
+  background-color: rgb(var(--color-canvas));
+  background-image:
+    radial-gradient(circle at top left, rgb(var(--color-accent) / 0.65), transparent 55%),
+    radial-gradient(circle at 20% 30%, rgb(var(--color-border) / 0.6), transparent 40%),
+    radial-gradient(circle at bottom right, rgb(var(--color-user) / 0.65), transparent 55%);
+  font-feature-settings: "ss01" 1, "ss02" 1, "cv11" 1;
+}
+
+::selection {
+  background: rgba(90, 124, 115, 0.25);
+}
+
+.prose {
+  color: inherit;
+}
+
+.prose a {
+  color: rgb(var(--color-accent-strong));
+  text-decoration: none;
+}
+
+.prose a:hover {
+  text-decoration: underline;
+}
+
+.prose code {
+  background: rgb(var(--color-accent-strong) / 0.12);
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.35rem;
+  font-weight: 600;
+}
+
+.prose pre {
+  background: #1f2933;
+  color: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
