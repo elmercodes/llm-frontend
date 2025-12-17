@@ -17,7 +17,7 @@ export default function ChatThread({ messages }: ChatThreadProps) {
   }, [messages]);
 
   return (
-    <div className="flex-1 min-h-0 px-4 py-6 md:px-6">
+    <div className="flex-1 min-h-0 min-w-0 px-4 py-6 md:px-6">
       <ScrollArea className="h-full">
         <div className="space-y-4 pr-2">
           {messages.length === 0 ? (

@@ -8,7 +8,7 @@ import Composer from "@/components/chat/composer";
 import TitleEditor from "@/components/chat/title-editor";
 import { Button } from "@/components/ui/button";
 import { useTheme, type Theme } from "@/components/theme-provider";
-import { Settings, Moon, Sun } from "lucide-react";
+import { Settings, Moon, Sun, PanelLeft, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type Message = {
@@ -28,8 +28,11 @@ export type Conversation = {
   title: string;
   messages: Message[];
   attachments: Attachment[];
+  createdAt: number;
+  lastUpdatedAt: number;
 };
 
+const seedTimestamp = Date.now();
 const seedConversations: Conversation[] = [
   {
     id: "conv-aurora",
@@ -50,7 +53,9 @@ const seedConversations: Conversation[] = [
         role: "user",
         content: "Start with a timeline and include key risks."
       }
-    ]
+    ],
+    createdAt: seedTimestamp - 1000 * 60 * 60 * 2,
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 45
   },
   {
     id: "conv-research",
@@ -63,7 +68,9 @@ const seedConversations: Conversation[] = [
         content:
           "I summarized the top findings and highlighted the gaps you can validate next week."
       }
-    ]
+    ],
+    createdAt: seedTimestamp - 1000 * 60 * 60 * 6,
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 60 * 3
   }
 ];
 
@@ -76,6 +83,7 @@ export default function ChatApp() {
   const { theme, setTheme } = useTheme();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const settingsRef = React.useRef<HTMLDivElement>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
@@ -85,6 +93,14 @@ export default function ChatApp() {
   const activeConversation = conversations.find(
     (conversation) => conversation.id === activeId
   );
+  const sortedConversations = React.useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      if (a.lastUpdatedAt !== b.lastUpdatedAt) {
+        return b.lastUpdatedAt - a.lastUpdatedAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+  }, [conversations]);
 
   const updateConversation = React.useCallback(
     (id: string, updater: (conversation: Conversation) => Conversation) => {
@@ -98,6 +114,7 @@ export default function ChatApp() {
   );
 
   const handleNewChat = () => {
+    const now = Date.now();
     const newConversation: Conversation = {
       id: createId(),
       title: "New chat",
@@ -109,11 +126,14 @@ export default function ChatApp() {
           content:
             "Tell me what you want to build, and I will help you map the next steps."
         }
-      ]
+      ],
+      createdAt: now,
+      lastUpdatedAt: now
     };
 
     setConversations((prev) => [newConversation, ...prev]);
     setActiveId(newConversation.id);
+    setIsSidebarOpen(false);
   };
 
   const handleRenameConversation = (id: string, title: string) => {
@@ -144,6 +164,7 @@ export default function ChatApp() {
     if (!trimmed) return;
 
     const conversationId = activeConversation.id;
+    const now = Date.now();
     const userMessage: Message = {
       id: createId(),
       role: "user",
@@ -158,7 +179,8 @@ export default function ChatApp() {
 
     updateConversation(conversationId, (conversation) => ({
       ...conversation,
-      messages: [...conversation.messages, userMessage, assistantMessage]
+      messages: [...conversation.messages, userMessage, assistantMessage],
+      lastUpdatedAt: now
     }));
 
     for await (const chunk of mockStreamAssistantReply(trimmed)) {
@@ -180,6 +202,11 @@ export default function ChatApp() {
           : message
       )
     }));
+  };
+
+  const handleSelectConversation = (id: string) => {
+    setActiveId(id);
+    setIsSidebarOpen(false);
   };
 
   const isStreaming = Boolean(
@@ -216,26 +243,65 @@ export default function ChatApp() {
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
-      <Sidebar
-        conversations={conversations}
-        activeId={activeId}
-        attachments={activeConversation?.attachments ?? []}
-        onNewChat={handleNewChat}
-        onSelectConversation={setActiveId}
-      />
+    <div className="relative flex h-full w-full min-w-0 overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
+      <div className="hidden md:flex">
+        <Sidebar
+          conversations={sortedConversations}
+          activeId={activeId}
+          attachments={activeConversation?.attachments ?? []}
+          onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
+        />
+      </div>
+      {isSidebarOpen ? (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-ink/40"
+            aria-label="Close sidebar"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <div className="relative z-10 h-full">
+            <Sidebar
+              conversations={sortedConversations}
+              activeId={activeId}
+              attachments={activeConversation?.attachments ?? []}
+              onNewChat={handleNewChat}
+              onSelectConversation={handleSelectConversation}
+            />
+          </div>
+        </div>
+      ) : null}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-panel/90 px-6 py-4">
-          {activeConversation ? (
-            <TitleEditor
-              title={activeConversation.title}
-              onRename={(title) =>
-                handleRenameConversation(activeConversation.id, title)
-              }
-            />
-          ) : (
-            <div className="text-lg font-semibold">No conversation selected</div>
-          )}
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle sidebar"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              className="h-10 w-10 rounded-2xl border border-border bg-card/80 text-ink shadow-glow hover:bg-accent/50 md:hidden"
+            >
+              {isSidebarOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <PanelLeft className="h-5 w-5" />
+              )}
+            </Button>
+            {activeConversation ? (
+              <TitleEditor
+                title={activeConversation.title}
+                onRename={(title) =>
+                  handleRenameConversation(activeConversation.id, title)
+                }
+              />
+            ) : (
+              <div className="text-lg font-semibold">
+                No conversation selected
+              </div>
+            )}
+          </div>
           <div className="relative z-10" ref={settingsRef}>
             <Button
               type="button"

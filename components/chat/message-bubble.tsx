@@ -27,7 +27,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       )}
       <div
         className={cn(
-          "max-w-[75%] rounded-3xl border px-5 py-4 text-sm shadow-glow",
+          "max-w-[75%] break-words rounded-3xl border px-5 py-4 text-sm shadow-glow",
           isUser
             ? "border-transparent bg-user text-ink"
             : "border-border bg-assistant text-ink"
@@ -44,7 +44,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         {message.content ? (
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
-            className="prose prose-sm max-w-none"
+            className="prose prose-sm max-w-none break-words prose-pre:whitespace-pre-wrap prose-pre:break-words prose-pre:overflow-x-hidden"
           >
             {message.content}
           </ReactMarkdown>

@@ -16,6 +16,9 @@ const config: Config = {
         "accent-contrast": "rgb(var(--color-accent-contrast) / <alpha-value>)",
         chip: "rgb(var(--color-chip) / <alpha-value>)",
         "chip-text": "rgb(var(--color-chip-text) / <alpha-value>)",
+        "active-bg": "rgb(var(--color-active-bg) / <alpha-value>)",
+        "active-text": "rgb(var(--color-active-text) / <alpha-value>)",
+        "active-border": "rgb(var(--color-active-border) / <alpha-value>)",
         assistant: "rgb(var(--color-assistant) / <alpha-value>)",
         user: "rgb(var(--color-user) / <alpha-value>)"
       },
