@@ -6,6 +6,10 @@ import Sidebar from "@/components/chat/sidebar";
 import ChatThread from "@/components/chat/chat-thread";
 import Composer from "@/components/chat/composer";
 import TitleEditor from "@/components/chat/title-editor";
+import { Button } from "@/components/ui/button";
+import { useTheme, type Theme } from "@/components/theme-provider";
+import { Settings, Moon, Sun } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type Message = {
   id: string;
@@ -69,6 +73,10 @@ const createId = () =>
     : Math.random().toString(36).slice(2);
 
 export default function ChatApp() {
+  const { theme, setTheme } = useTheme();
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const settingsRef = React.useRef<HTMLDivElement>(null);
+
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
   );
@@ -178,6 +186,35 @@ export default function ChatApp() {
     activeConversation?.messages.some((message) => message.isStreaming)
   );
 
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  const handleThemeSelect = (value: Theme) => {
+    setTheme(value);
+    setIsSettingsOpen(false);
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
       <Sidebar
@@ -188,7 +225,7 @@ export default function ChatApp() {
         onSelectConversation={setActiveId}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-white/80 px-6 py-4">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-panel/90 px-6 py-4">
           {activeConversation ? (
             <TitleEditor
               title={activeConversation.title}
@@ -199,8 +236,59 @@ export default function ChatApp() {
           ) : (
             <div className="text-lg font-semibold">No conversation selected</div>
           )}
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
-            {isStreaming ? "Streaming" : "Ready"}
+          <div className="relative z-10" ref={settingsRef}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Open settings"
+              aria-expanded={isSettingsOpen}
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
+              className="h-10 w-10 rounded-2xl border border-border bg-card/80 text-ink shadow-glow hover:bg-accent/50"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+            {isSettingsOpen ? (
+              <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-border bg-card p-3 shadow-soft">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+                  Theme
+                </div>
+                <div className="mt-2 space-y-2">
+                  {["light", "dark"].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handleThemeSelect(option as Theme)}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-xl border px-3 py-2 text-sm transition",
+                        theme === option
+                          ? "border-accent-strong bg-accent/40 text-ink shadow-glow"
+                          : "border-border bg-panel/60 text-muted hover:bg-accent/30 hover:text-ink"
+                      )}
+                      aria-pressed={theme === option}
+                    >
+                      <span className="flex items-center gap-2 text-ink">
+                        {option === "light" ? (
+                          <Sun className="h-4 w-4" />
+                        ) : (
+                          <Moon className="h-4 w-4" />
+                        )}
+                        {option === "light" ? "Light" : "Dark"}
+                      </span>
+                      <span
+                        className={cn(
+                          "h-2 w-2 rounded-full",
+                          theme === option
+                            ? "bg-accent-strong"
+                            : "bg-border"
+                        )}
+                        aria-hidden
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </header>
         <ChatThread messages={activeConversation?.messages ?? []} />
