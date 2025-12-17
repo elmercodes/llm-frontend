@@ -10,7 +10,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Aurora Chat",
+  title: "Doc. Chat",
   description: "A clean, streaming-ready LLM chat interface."
 };
 

@@ -43,7 +43,7 @@ export default function Composer({
 
   return (
     <div className="shrink-0 border-t border-border bg-panel/90 px-5 py-4">
-      <div className="flex items-end gap-3">
+      <div className="flex min-w-0 items-end gap-3">
         <button
           type="button"
           className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-card/90 text-ink shadow-glow transition hover:bg-accent/40"
@@ -60,7 +60,7 @@ export default function Composer({
           className="hidden"
           onChange={handleFilesSelected}
         />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Textarea
             value={value}
             onChange={(event) => setValue(event.target.value)}

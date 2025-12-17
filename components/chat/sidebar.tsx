@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,17 +24,17 @@ export default function Sidebar({
   onSelectConversation
 }: SidebarProps) {
   return (
-    <aside className="flex h-full min-h-0 w-[300px] min-w-[280px] flex-col border-r border-border bg-panel/80">
+    <aside className="flex h-full min-h-0 w-[clamp(220px,22vw,320px)] min-w-[220px] max-w-[320px] shrink-0 flex-col border-r border-border bg-panel/80">
       <div className="px-5 pb-4 pt-5">
         <div className="flex items-center gap-3 text-ink">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/70 text-ink">
-            <Sparkles className="h-5 w-5" />
+            <Stethoscope className="h-5 w-5" />
           </span>
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">
               Studio
             </div>
-            <div className="text-lg font-semibold">Aurora Chat</div>
+            <div className="text-lg font-semibold">Doc. Chat</div>
           </div>
         </div>
         <Button
