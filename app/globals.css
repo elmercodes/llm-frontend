@@ -26,6 +26,7 @@ body {
 
 body {
   margin: 0;
+  overflow: hidden;
   color: rgb(var(--color-ink));
   background-color: rgb(var(--color-canvas));
   background-image:

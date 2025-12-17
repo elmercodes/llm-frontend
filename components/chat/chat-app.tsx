@@ -179,7 +179,7 @@ export default function ChatApp() {
   );
 
   return (
-    <div className="flex w-full">
+    <div className="flex h-full w-full overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
       <Sidebar
         conversations={conversations}
         activeId={activeId}
@@ -187,8 +187,8 @@ export default function ChatApp() {
         onNewChat={handleNewChat}
         onSelectConversation={setActiveId}
       />
-      <div className="flex min-w-0 flex-1 flex-col min-h-0">
-        <header className="flex items-center justify-between gap-4 border-b border-border bg-white/80 px-6 py-4">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-white/80 px-6 py-4">
           {activeConversation ? (
             <TitleEditor
               title={activeConversation.title}

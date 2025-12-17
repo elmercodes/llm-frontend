@@ -42,7 +42,7 @@ export default function Composer({
   };
 
   return (
-    <div className="border-t border-border bg-white/80 px-5 py-4">
+    <div className="shrink-0 border-t border-border bg-white/80 px-5 py-4">
       <div className="flex items-end gap-3">
         <button
           type="button"

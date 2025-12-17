@@ -24,7 +24,7 @@ export default function Sidebar({
   onSelectConversation
 }: SidebarProps) {
   return (
-    <aside className="flex w-80 flex-col border-r border-border bg-white/70">
+    <aside className="flex h-full min-h-0 w-[300px] min-w-[280px] flex-col border-r border-border bg-white/70">
       <div className="px-5 pb-4 pt-5">
         <div className="flex items-center gap-3 text-ink">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/70 text-ink">
