@@ -24,7 +24,7 @@ export default function Sidebar({
   onSelectConversation
 }: SidebarProps) {
   return (
-    <aside className="flex h-full min-h-0 w-[300px] min-w-[280px] flex-col border-r border-border bg-white/70">
+    <aside className="flex h-full min-h-0 w-[300px] min-w-[280px] flex-col border-r border-border bg-panel/80">
       <div className="px-5 pb-4 pt-5">
         <div className="flex items-center gap-3 text-ink">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/70 text-ink">
@@ -38,7 +38,7 @@ export default function Sidebar({
           </div>
         </div>
         <Button
-          className="mt-4 w-full justify-center"
+          className="mt-4 w-full justify-center shadow-glow"
           onClick={onNewChat}
         >
           <Plus className="h-4 w-4" />
@@ -85,7 +85,7 @@ export default function Sidebar({
                   "w-full rounded-2xl border px-4 py-3 text-left transition",
                   isActive
                     ? "border-transparent bg-accent/70 shadow-glow"
-                    : "border-border bg-white/80 hover:bg-accent/30"
+                    : "border-border bg-card/90 hover:bg-accent/30"
                 )}
                 onClick={() => onSelectConversation(conversation.id)}
               >

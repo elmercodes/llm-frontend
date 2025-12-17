@@ -21,7 +21,7 @@ export default function ChatThread({ messages }: ChatThreadProps) {
       <ScrollArea className="h-full">
         <div className="space-y-4 pr-2">
           {messages.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-border bg-white/70 p-8 text-center text-sm text-muted">
+            <div className="rounded-3xl border border-dashed border-border bg-card/80 p-8 text-center text-sm text-muted">
               Start a conversation by asking your first question.
             </div>
           ) : (

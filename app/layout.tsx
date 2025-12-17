@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -19,9 +20,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={spaceGrotesk.variable}>
-      <body className="font-sans h-full">
-        {children}
+    <html lang="en" data-theme="light" className={spaceGrotesk.variable}>
+      <body className="h-full font-sans">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -7,11 +7,13 @@ const config: Config = {
       colors: {
         canvas: "var(--color-canvas)",
         panel: "var(--color-panel)",
+        card: "var(--color-card)",
         ink: "var(--color-ink)",
         muted: "var(--color-muted)",
         border: "var(--color-border)",
         accent: "var(--color-accent)",
         "accent-strong": "var(--color-accent-strong)",
+        "accent-contrast": "var(--color-accent-contrast)",
         "assistant": "var(--color-assistant)",
         "user": "var(--color-user)"
       },

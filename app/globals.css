@@ -3,16 +3,34 @@
 @tailwind utilities;
 
 :root {
-  --color-canvas: 247 244 239;
-  --color-panel: 255 255 255;
-  --color-ink: 31 41 51;
-  --color-muted: 107 114 128;
-  --color-border: 228 224 218;
-  --color-accent: 197 214 208;
-  --color-accent-strong: 90 124 115;
-  --color-assistant: 239 244 242;
-  --color-user: 255 247 230;
+  color-scheme: light;
+  --color-canvas: 226 250 181;
+  --color-panel: 255 252 209;
+  --color-card: 255 252 194;
+  --color-border: 199 246 182;
+  --color-ink: 26 46 32;
+  --color-muted: 80 98 85;
+  --color-accent: 153 238 153;
+  --color-accent-strong: 63 125 79;
+  --color-accent-contrast: 244 255 240;
+  --color-assistant: 247 252 234;
+  --color-user: 255 247 208;
   --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: 18 26 18;
+  --color-panel: 26 35 25;
+  --color-card: 33 45 32;
+  --color-border: 63 78 63;
+  --color-ink: 229 239 225;
+  --color-muted: 166 179 165;
+  --color-accent: 110 179 110;
+  --color-accent-strong: 52 99 64;
+  --color-accent-contrast: 232 245 231;
+  --color-assistant: 36 48 37;
+  --color-user: 44 56 39;
 }
 
 * {
@@ -30,14 +48,14 @@ body {
   color: rgb(var(--color-ink));
   background-color: rgb(var(--color-canvas));
   background-image:
-    radial-gradient(circle at top left, rgb(var(--color-accent) / 0.65), transparent 55%),
-    radial-gradient(circle at 20% 30%, rgb(var(--color-border) / 0.6), transparent 40%),
-    radial-gradient(circle at bottom right, rgb(var(--color-user) / 0.65), transparent 55%);
+    radial-gradient(circle at top left, rgb(var(--color-accent) / 0.4), transparent 55%),
+    radial-gradient(circle at 20% 30%, rgb(var(--color-border) / 0.5), transparent 45%),
+    radial-gradient(circle at bottom right, rgb(var(--color-user) / 0.4), transparent 60%);
   font-feature-settings: "ss01" 1, "ss02" 1, "cv11" 1;
 }
 
 ::selection {
-  background: rgba(90, 124, 115, 0.25);
+  background: rgb(var(--color-accent-strong) / 0.25);
 }
 
 .prose {
@@ -61,8 +79,9 @@ body {
 }
 
 .prose pre {
-  background: #1f2933;
-  color: #f8fafc;
+  background: rgb(var(--color-card));
+  color: rgb(var(--color-ink));
   border-radius: 0.75rem;
   padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
 }
