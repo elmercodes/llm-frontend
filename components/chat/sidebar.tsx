@@ -38,7 +38,7 @@ export default function Sidebar({
           </div>
         </div>
         <Button
-          className="mt-4 w-full justify-center shadow-glow"
+          className="mt-4 w-full justify-center bg-accent text-accent-contrast shadow-glow hover:bg-accent/90"
           onClick={onNewChat}
         >
           <Plus className="h-4 w-4" />
@@ -57,7 +57,7 @@ export default function Sidebar({
             </div>
           ) : (
             attachments.map((attachment) => (
-              <Badge key={attachment.id} variant="accent">
+              <Badge key={attachment.id}>
                 {attachment.name}
               </Badge>
             ))
@@ -84,8 +84,8 @@ export default function Sidebar({
                 className={cn(
                   "w-full rounded-2xl border px-4 py-3 text-left transition",
                   isActive
-                    ? "border-transparent bg-accent/70 shadow-glow"
-                    : "border-border bg-card/90 hover:bg-accent/30"
+                    ? "border-chip bg-chip/90 text-chip-text shadow-glow"
+                    : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80"
                 )}
                 onClick={() => onSelectConversation(conversation.id)}
               >

@@ -5,17 +5,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "var(--color-canvas)",
-        panel: "var(--color-panel)",
-        card: "var(--color-card)",
-        ink: "var(--color-ink)",
-        muted: "var(--color-muted)",
-        border: "var(--color-border)",
-        accent: "var(--color-accent)",
-        "accent-strong": "var(--color-accent-strong)",
-        "accent-contrast": "var(--color-accent-contrast)",
-        "assistant": "var(--color-assistant)",
-        "user": "var(--color-user)"
+        canvas: "rgb(var(--color-canvas) / <alpha-value>)",
+        panel: "rgb(var(--color-panel) / <alpha-value>)",
+        card: "rgb(var(--color-card) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        "accent-strong": "rgb(var(--color-accent-strong) / <alpha-value>)",
+        "accent-contrast": "rgb(var(--color-accent-contrast) / <alpha-value>)",
+        chip: "rgb(var(--color-chip) / <alpha-value>)",
+        "chip-text": "rgb(var(--color-chip-text) / <alpha-value>)",
+        assistant: "rgb(var(--color-assistant) / <alpha-value>)",
+        user: "rgb(var(--color-user) / <alpha-value>)"
       },
       boxShadow: {
         soft: "0 18px 45px -30px rgba(15, 23, 42, 0.35)",

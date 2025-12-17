@@ -196,8 +196,18 @@ export default function ChatApp() {
       }
     };
 
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSettingsOpen(false);
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const handleThemeSelect = (value: Theme) => {
@@ -226,7 +236,7 @@ export default function ChatApp() {
           ) : (
             <div className="text-lg font-semibold">No conversation selected</div>
           )}
-          <div className="relative" ref={settingsRef}>
+          <div className="relative z-10" ref={settingsRef}>
             <Button
               type="button"
               variant="ghost"

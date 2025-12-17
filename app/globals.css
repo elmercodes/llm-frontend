@@ -4,33 +4,53 @@
 
 :root {
   color-scheme: light;
-  --color-canvas: 226 250 181;
-  --color-panel: 255 252 209;
-  --color-card: 255 252 194;
-  --color-border: 199 246 182;
-  --color-ink: 26 46 32;
-  --color-muted: 80 98 85;
-  --color-accent: 153 238 153;
-  --color-accent-strong: 63 125 79;
-  --color-accent-contrast: 244 255 240;
-  --color-assistant: 247 252 234;
-  --color-user: 255 247 208;
+  --bg: 246 240 228;
+  --surface: 255 252 244;
+  --card: 255 249 235;
+  --border: 221 210 193;
+  --text: 34 44 34;
+  --muted: 98 111 99;
+  --accent: 52 82 60;
+  --accentStrong: 38 64 46;
+  --accentText: 244 241 232;
+  --chipBg: 178 214 150;
+  --chipText: 26 44 28;
+  --assistant: 238 246 230;
+  --user: 250 243 224;
   --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-canvas: 18 26 18;
-  --color-panel: 26 35 25;
-  --color-card: 33 45 32;
-  --color-border: 63 78 63;
-  --color-ink: 229 239 225;
-  --color-muted: 166 179 165;
-  --color-accent: 110 179 110;
-  --color-accent-strong: 52 99 64;
-  --color-accent-contrast: 232 245 231;
-  --color-assistant: 36 48 37;
-  --color-user: 44 56 39;
+  --bg: 18 20 24;
+  --surface: 26 30 36;
+  --card: 34 39 46;
+  --border: 63 68 78;
+  --text: 233 238 243;
+  --muted: 164 172 186;
+  --accent: 64 160 114;
+  --accentStrong: 42 120 84;
+  --accentText: 13 24 16;
+  --chipBg: 56 63 72;
+  --chipText: 224 231 238;
+  --assistant: 40 46 54;
+  --user: 52 60 70;
+}
+
+:root {
+  --color-canvas: var(--bg);
+  --color-panel: var(--surface);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accentStrong);
+  --color-accent-contrast: var(--accentText);
+  --color-assistant: var(--assistant);
+  --color-user: var(--user);
+  --color-chip: var(--chipBg);
+  --color-chip-text: var(--chipText);
 }
 
 * {
@@ -48,9 +68,9 @@ body {
   color: rgb(var(--color-ink));
   background-color: rgb(var(--color-canvas));
   background-image:
-    radial-gradient(circle at top left, rgb(var(--color-accent) / 0.4), transparent 55%),
-    radial-gradient(circle at 20% 30%, rgb(var(--color-border) / 0.5), transparent 45%),
-    radial-gradient(circle at bottom right, rgb(var(--color-user) / 0.4), transparent 60%);
+    radial-gradient(circle at top left, rgb(var(--color-border) / 0.35), transparent 52%),
+    radial-gradient(circle at 18% 34%, rgb(var(--color-chip) / 0.35), transparent 42%),
+    radial-gradient(circle at bottom right, rgb(var(--color-assistant) / 0.35), transparent 60%);
   font-feature-settings: "ss01" 1, "ss02" 1, "cv11" 1;
 }
 
