@@ -14,6 +14,7 @@ type AttachmentViewerProps = {
   attachments: Attachment[];
   onClose: () => void;
   onSelectAttachment: (attachment: Attachment) => void;
+  variant: "sidebar" | "overlay";
   className?: string;
 };
 
@@ -22,6 +23,7 @@ export default function AttachmentViewer({
   attachments,
   onClose,
   onSelectAttachment,
+  variant,
   className
 }: AttachmentViewerProps) {
   const [textContent, setTextContent] = React.useState<string>("");
@@ -40,6 +42,7 @@ export default function AttachmentViewer({
   const isTxt = attachment.type === "txt";
   const isDocx = attachment.type === "docx";
   const hasMultipleAttachments = attachments.length > 1;
+  const isOverlay = variant === "overlay";
 
   React.useEffect(() => {
     if (!isTxt) {
@@ -168,7 +171,9 @@ export default function AttachmentViewer({
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 w-[min(100vw,clamp(320px,30vw,520px))] shrink-0 flex-col border-l border-border bg-panel/80",
+        isOverlay
+          ? "fixed inset-0 z-50 flex h-full w-full flex-col overflow-hidden bg-panel/95 shadow-2xl"
+          : "flex h-full min-h-0 w-[min(100vw,clamp(320px,30vw,520px))] shrink-0 flex-col border-l border-border bg-panel/80",
         className
       )}
     >
@@ -210,7 +215,7 @@ export default function AttachmentViewer({
                 ? createPortal(
                     <div
                       ref={menuRef}
-                      className="fixed z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-soft"
+                      className="fixed z-[70] w-64 rounded-2xl border border-border bg-card p-2 shadow-soft"
                       style={{
                         top: menuPosition.top,
                         left: menuPosition.left

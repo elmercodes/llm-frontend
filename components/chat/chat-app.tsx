@@ -259,13 +259,14 @@ export default function ChatApp() {
 
   const handleCloseAttachment = () => {
     setSelectedAttachment(null);
-    setIsSidebarOpen(true);
+    setIsSidebarOpen(false);
   };
 
   const isStreaming = Boolean(
     activeConversation?.messages.some((message) => message.isStreaming)
   );
-  const isViewerOpen = Boolean(selectedAttachment) && isWideLayout;
+  const isViewerOpen = Boolean(selectedAttachment);
+  const viewerVariant = isWideLayout ? "sidebar" : "overlay";
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -439,6 +440,7 @@ export default function ChatApp() {
           attachments={activeConversation?.attachments ?? []}
           onClose={handleCloseAttachment}
           onSelectAttachment={handleOpenAttachment}
+          variant={viewerVariant}
           className={isViewerOpen ? "" : "hidden"}
         />
       ) : null}
