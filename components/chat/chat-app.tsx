@@ -55,9 +55,9 @@ const seedConversations: Conversation[] = [
       },
       {
         id: "file-3",
-        name: "terms-summary.docx",
+        name: "demo.docx",
         type: "docx",
-        url: ""
+        url: "/demo.docx"
       }
     ],
     messages: [
@@ -105,6 +105,10 @@ export default function ChatApp() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [selectedAttachment, setSelectedAttachment] =
     React.useState<Attachment | null>(null);
+  const [isWideLayout, setIsWideLayout] = React.useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 900px)").matches;
+  });
 
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
@@ -261,7 +265,7 @@ export default function ChatApp() {
   const isStreaming = Boolean(
     activeConversation?.messages.some((message) => message.isStreaming)
   );
-  const isViewerOpen = Boolean(selectedAttachment);
+  const isViewerOpen = Boolean(selectedAttachment) && isWideLayout;
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -284,6 +288,16 @@ export default function ChatApp() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 900px)");
+    const updateLayout = () => setIsWideLayout(mediaQuery.matches);
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => {
+      mediaQuery.removeEventListener("change", updateLayout);
     };
   }, []);
 
@@ -422,7 +436,10 @@ export default function ChatApp() {
       {selectedAttachment ? (
         <AttachmentViewer
           attachment={selectedAttachment}
+          attachments={activeConversation?.attachments ?? []}
           onClose={handleCloseAttachment}
+          onSelectAttachment={handleOpenAttachment}
+          className={isViewerOpen ? "" : "hidden"}
         />
       ) : null}
     </div>
