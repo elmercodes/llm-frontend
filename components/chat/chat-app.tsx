@@ -6,6 +6,7 @@ import Sidebar from "@/components/chat/sidebar";
 import ChatThread from "@/components/chat/chat-thread";
 import Composer from "@/components/chat/composer";
 import TitleEditor from "@/components/chat/title-editor";
+import AttachmentViewer from "@/components/chat/attachment-viewer";
 import { Button } from "@/components/ui/button";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { Settings, Moon, Sun, PanelLeft, X } from "lucide-react";
@@ -21,6 +22,8 @@ export type Message = {
 export type Attachment = {
   id: string;
   name: string;
+  type: "pdf" | "txt" | "doc" | "docx";
+  url: string;
 };
 
 export type Conversation = {
@@ -38,8 +41,24 @@ const seedConversations: Conversation[] = [
     id: "conv-aurora",
     title: "Aurora launch plan",
     attachments: [
-      { id: "file-1", name: "product-brief.pdf" },
-      { id: "file-2", name: "personas.csv" }
+      {
+        id: "file-1",
+        name: "product-brief.pdf",
+        type: "pdf",
+        url: "/demo.pdf"
+      },
+      {
+        id: "file-2",
+        name: "kickoff-notes.txt",
+        type: "txt",
+        url: "/demo.txt"
+      },
+      {
+        id: "file-3",
+        name: "demo.docx",
+        type: "docx",
+        url: "/demo.docx"
+      }
     ],
     messages: [
       {
@@ -84,6 +103,12 @@ export default function ChatApp() {
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const settingsRef = React.useRef<HTMLDivElement>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [selectedAttachment, setSelectedAttachment] =
+    React.useState<Attachment | null>(null);
+  const [isWideLayout, setIsWideLayout] = React.useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 900px)").matches;
+  });
 
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
@@ -145,11 +170,29 @@ export default function ChatApp() {
     }));
   };
 
+  const resolveAttachmentType = (name: string): Attachment["type"] => {
+    const extension = name.split(".").pop()?.toLowerCase();
+    switch (extension) {
+      case "pdf":
+        return "pdf";
+      case "txt":
+        return "txt";
+      case "doc":
+        return "doc";
+      case "docx":
+        return "docx";
+      default:
+        return "doc";
+    }
+  };
+
   const handleAttachFiles = (files: FileList) => {
     if (!activeConversation || files.length === 0) return;
     const newAttachments: Attachment[] = Array.from(files).map((file) => ({
       id: createId(),
-      name: file.name
+      name: file.name,
+      type: resolveAttachmentType(file.name),
+      url: URL.createObjectURL(file)
     }));
 
     updateConversation(activeConversation.id, (conversation) => ({
@@ -209,9 +252,20 @@ export default function ChatApp() {
     setIsSidebarOpen(false);
   };
 
+  const handleOpenAttachment = (attachment: Attachment) => {
+    setSelectedAttachment(attachment);
+    setIsSidebarOpen(false);
+  };
+
+  const handleCloseAttachment = () => {
+    setSelectedAttachment(null);
+    setIsSidebarOpen(true);
+  };
+
   const isStreaming = Boolean(
     activeConversation?.messages.some((message) => message.isStreaming)
   );
+  const isViewerOpen = Boolean(selectedAttachment) && isWideLayout;
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -237,6 +291,16 @@ export default function ChatApp() {
     };
   }, []);
 
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 900px)");
+    const updateLayout = () => setIsWideLayout(mediaQuery.matches);
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => {
+      mediaQuery.removeEventListener("change", updateLayout);
+    };
+  }, []);
+
   const handleThemeSelect = (value: Theme) => {
     setTheme(value);
     setIsSettingsOpen(false);
@@ -244,16 +308,19 @@ export default function ChatApp() {
 
   return (
     <div className="relative flex h-full w-full min-w-0 overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
-      <div className="hidden md:flex">
-        <Sidebar
-          conversations={sortedConversations}
-          activeId={activeId}
-          attachments={activeConversation?.attachments ?? []}
-          onNewChat={handleNewChat}
-          onSelectConversation={handleSelectConversation}
-        />
-      </div>
-      {isSidebarOpen ? (
+      {!isViewerOpen ? (
+        <div className="hidden md:flex">
+          <Sidebar
+            conversations={sortedConversations}
+            activeId={activeId}
+            attachments={activeConversation?.attachments ?? []}
+            onNewChat={handleNewChat}
+            onSelectConversation={handleSelectConversation}
+            onSelectAttachment={handleOpenAttachment}
+          />
+        </div>
+      ) : null}
+      {isSidebarOpen && !isViewerOpen ? (
         <div className="fixed inset-0 z-40 flex md:hidden">
           <button
             type="button"
@@ -268,6 +335,7 @@ export default function ChatApp() {
               attachments={activeConversation?.attachments ?? []}
               onNewChat={handleNewChat}
               onSelectConversation={handleSelectConversation}
+              onSelectAttachment={handleOpenAttachment}
             />
           </div>
         </div>
@@ -365,6 +433,15 @@ export default function ChatApp() {
           onSendMessage={handleSendMessage}
         />
       </div>
+      {selectedAttachment ? (
+        <AttachmentViewer
+          attachment={selectedAttachment}
+          attachments={activeConversation?.attachments ?? []}
+          onClose={handleCloseAttachment}
+          onSelectAttachment={handleOpenAttachment}
+          className={isViewerOpen ? "" : "hidden"}
+        />
+      ) : null}
     </div>
   );
 }

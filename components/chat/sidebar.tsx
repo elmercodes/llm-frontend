@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Plus, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { badgeVariants } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Attachment, Conversation } from "@/components/chat/chat-app";
@@ -14,6 +14,7 @@ type SidebarProps = {
   attachments: Attachment[];
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
+  onSelectAttachment: (attachment: Attachment) => void;
 };
 
 export default function Sidebar({
@@ -21,7 +22,8 @@ export default function Sidebar({
   activeId,
   attachments,
   onNewChat,
-  onSelectConversation
+  onSelectConversation,
+  onSelectAttachment
 }: SidebarProps) {
   return (
     <aside className="flex h-full min-h-0 w-[clamp(220px,22vw,320px)] min-w-[220px] max-w-[320px] shrink-0 flex-col border-r border-border bg-panel/80">
@@ -57,9 +59,17 @@ export default function Sidebar({
             </div>
           ) : (
             attachments.map((attachment) => (
-              <Badge key={attachment.id}>
+              <button
+                key={attachment.id}
+                type="button"
+                onClick={() => onSelectAttachment(attachment)}
+                className={cn(
+                  badgeVariants(),
+                  "shrink-0 cursor-pointer transition hover:border-accent hover:bg-accent/60 hover:text-ink"
+                )}
+              >
                 {attachment.name}
-              </Badge>
+              </button>
             ))
           )}
         </div>
