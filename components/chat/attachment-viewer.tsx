@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import * as mammoth from "mammoth/mammoth.browser";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,12 @@ export default function AttachmentViewer({
   const [docxError, setDocxError] = React.useState(false);
   const [isLoadingDocx, setIsLoadingDocx] = React.useState(false);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = React.useState({
+    top: 0,
+    left: 0
+  });
   const isPdf = attachment.type === "pdf";
   const isTxt = attachment.type === "txt";
   const isDocx = attachment.type === "docx";
@@ -119,10 +125,23 @@ export default function AttachmentViewer({
   React.useEffect(() => {
     if (!isMenuOpen) return;
 
+    const updatePosition = () => {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuWidth = 256;
+      const left = Math.max(16, rect.right - menuWidth);
+      const top = rect.bottom + 8;
+      setMenuPosition({ top, left });
+    };
+
+    updatePosition();
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
         menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
       ) {
         setIsMenuOpen(false);
       }
@@ -136,9 +155,13 @@ export default function AttachmentViewer({
 
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
     };
   }, [isMenuOpen]);
 
@@ -170,7 +193,7 @@ export default function AttachmentViewer({
             </span>
           </div>
           {hasMultipleAttachments ? (
-            <div className="relative" ref={menuRef}>
+            <div className="relative">
               <Button
                 type="button"
                 variant="ghost"
@@ -178,37 +201,48 @@ export default function AttachmentViewer({
                 aria-label="Switch attachment"
                 aria-expanded={isMenuOpen}
                 onClick={() => setIsMenuOpen((prev) => !prev)}
+                ref={buttonRef}
                 className="h-8 w-8 rounded-xl border border-border bg-card/80 text-ink shadow-glow hover:bg-accent/50"
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
-              {isMenuOpen ? (
-                <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-card p-2 shadow-soft">
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
-                    Attachments
-                  </div>
-                  <div className="mt-1 space-y-1">
-                    {attachments.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          onSelectAttachment(item);
-                          setIsMenuOpen(false);
-                        }}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition",
-                          item.id === attachment.id
-                            ? "border-accent-strong bg-accent/40 text-ink shadow-glow"
-                            : "border-border bg-panel/60 text-muted hover:bg-accent/30 hover:text-ink"
-                        )}
-                      >
-                        <span className="truncate">{item.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+              {isMenuOpen && typeof document !== "undefined"
+                ? createPortal(
+                    <div
+                      ref={menuRef}
+                      className="fixed z-50 w-64 rounded-2xl border border-border bg-card p-2 shadow-soft"
+                      style={{
+                        top: menuPosition.top,
+                        left: menuPosition.left
+                      }}
+                    >
+                      <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+                        Attachments
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {attachments.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              onSelectAttachment(item);
+                              setIsMenuOpen(false);
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition",
+                              item.id === attachment.id
+                                ? "border-accent-strong bg-accent/40 text-ink shadow-glow"
+                                : "border-border bg-panel/60 text-muted hover:bg-accent/30 hover:text-ink"
+                            )}
+                          >
+                            <span className="truncate">{item.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>,
+                    document.body
+                  )
+                : null}
             </div>
           ) : null}
         </div>
