@@ -17,6 +17,7 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
+  useDocs?: boolean;
 };
 
 export type Attachment = {
@@ -37,7 +38,7 @@ export type Conversation = {
   pinnedAt: number | null;
 };
 
-const seedTimestamp = Date.now();
+const seedTimestamp = 1_700_000_000_000;
 const seedConversations: Conversation[] = [
   {
     id: "conv-aurora",
@@ -104,10 +105,20 @@ const createId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
-const sortPinnedConversations = (list: Conversation[]) =>
+const sortPinnedConversations = (
+  list: Conversation[],
+  order: string[]
+) =>
   [...list]
     .filter((conversation) => conversation.isPinned)
-    .sort((a, b) => (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0));
+    .sort((a, b) => {
+      const aIndex = order.indexOf(a.id);
+      const bIndex = order.indexOf(b.id);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0);
+    });
 
 const sortUnpinnedConversations = (list: Conversation[]) =>
   [...list]
@@ -130,10 +141,10 @@ export default function ChatApp() {
     null
   );
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-  const [isWideLayout, setIsWideLayout] = React.useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.matchMedia("(min-width: 900px)").matches;
-  });
+  const [isWideLayout, setIsWideLayout] = React.useState(true);
+  const [pinnedOrder, setPinnedOrder] = React.useState<string[]>([]);
+  const [useDocs, setUseDocs] = React.useState<boolean>(true);
+  const [mounted, setMounted] = React.useState(false);
 
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
@@ -165,8 +176,8 @@ export default function ChatApp() {
     (conversation) => conversation.id === activeId
   );
   const pinnedConversations = React.useMemo(
-    () => sortPinnedConversations(conversations),
-    [conversations]
+    () => sortPinnedConversations(conversations, pinnedOrder),
+    [conversations, pinnedOrder]
   );
   const unpinnedConversations = React.useMemo(
     () => sortUnpinnedConversations(conversations),
@@ -242,7 +253,7 @@ export default function ChatApp() {
     }));
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, shouldUseDocs: boolean) => {
     if (!activeConversation) return;
     const trimmed = content.trim();
     if (!trimmed) return;
@@ -252,7 +263,8 @@ export default function ChatApp() {
     const userMessage: Message = {
       id: createId(),
       role: "user",
-      content: trimmed
+      content: trimmed,
+      useDocs: shouldUseDocs
     };
     const assistantMessage: Message = {
       id: createId(),
@@ -267,7 +279,7 @@ export default function ChatApp() {
       lastUpdatedAt: now
     }));
 
-    for await (const chunk of mockStreamAssistantReply(trimmed)) {
+    for await (const chunk of mockStreamAssistantReply(trimmed, shouldUseDocs)) {
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
         messages: conversation.messages.map((message) =>
@@ -298,6 +310,7 @@ export default function ChatApp() {
     if (!conversation) return;
 
     if (conversation.isPinned) {
+      setPinnedOrder((prev) => prev.filter((item) => item !== id));
       updateConversation(id, (current) => ({
         ...current,
         isPinned: false,
@@ -314,6 +327,7 @@ export default function ChatApp() {
     }
 
     const now = Date.now();
+    setPinnedOrder((prev) => [id, ...prev.filter((item) => item !== id)]);
     updateConversation(id, (current) => ({
       ...current,
       isPinned: true,
@@ -322,7 +336,13 @@ export default function ChatApp() {
     }));
   };
 
+  const handleReorderPinned = (ids: string[]) => {
+    setPinnedOrder(ids);
+  };
+
   const handleDeleteConversation = (id: string) => {
+    const nextPinnedOrder = pinnedOrder.filter((item) => item !== id);
+    setPinnedOrder(nextPinnedOrder);
     setConversations((prev) => {
       const nextConversations = prev.filter(
         (conversation) => conversation.id !== id
@@ -335,7 +355,7 @@ export default function ChatApp() {
         }
 
         const nextSorted = [
-          ...sortPinnedConversations(nextConversations),
+          ...sortPinnedConversations(nextConversations, nextPinnedOrder),
           ...sortUnpinnedConversations(nextConversations)
         ];
         setActiveId(nextSorted[0].id);
@@ -385,6 +405,36 @@ export default function ChatApp() {
   }, []);
 
   React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    const stored = window.localStorage.getItem("pinnedOrder");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setPinnedOrder(parsed.filter((item) => typeof item === "string"));
+        }
+      } catch (error) {
+        console.error("Failed to parse pinned order", error);
+      }
+    }
+  }, [mounted]);
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    const stored = window.localStorage.getItem("useDocsPreference");
+    if (stored === "true") {
+      setUseDocs(true);
+    } else if (stored === "false") {
+      setUseDocs(false);
+    }
+  }, [mounted]);
+
+  React.useEffect(() => {
+    if (!mounted) return;
     const mediaQuery = window.matchMedia("(min-width: 900px)");
     const updateLayout = () => setIsWideLayout(mediaQuery.matches);
     updateLayout();
@@ -401,6 +451,30 @@ export default function ChatApp() {
       }
     };
   }, []);
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem("pinnedOrder", JSON.stringify(pinnedOrder));
+  }, [pinnedOrder, mounted]);
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem("useDocsPreference", useDocs ? "true" : "false");
+  }, [useDocs, mounted]);
+
+  React.useEffect(() => {
+    setPinnedOrder((prev) => {
+      const pinnedIds = conversations
+        .filter((conversation) => conversation.isPinned)
+        .map((conversation) => conversation.id);
+      const filtered = prev.filter((id) => pinnedIds.includes(id));
+      const missing = pinnedIds.filter((id) => !filtered.includes(id));
+      if (missing.length === 0 && filtered.length === prev.length) {
+        return prev;
+      }
+      return [...filtered, ...missing];
+    });
+  }, [conversations]);
 
   const handleThemeSelect = (value: Theme) => {
     setTheme(value);
@@ -428,6 +502,7 @@ export default function ChatApp() {
             onSelectAttachment={handleOpenAttachment}
             onTogglePin={handleTogglePin}
             onDeleteConversation={handleDeleteConversation}
+            onReorderPinned={handleReorderPinned}
           />
         </div>
       ) : null}
@@ -450,6 +525,7 @@ export default function ChatApp() {
               onSelectAttachment={handleOpenAttachment}
               onTogglePin={handleTogglePin}
               onDeleteConversation={handleDeleteConversation}
+              onReorderPinned={handleReorderPinned}
             />
           </div>
         </div>
@@ -545,6 +621,8 @@ export default function ChatApp() {
           isStreaming={isStreaming}
           onAttachFiles={handleAttachFiles}
           onSendMessage={handleSendMessage}
+          useDocs={useDocs}
+          onToggleUseDocs={setUseDocs}
         />
       </div>
       {selectedAttachment ? (

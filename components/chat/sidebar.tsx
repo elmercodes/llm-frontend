@@ -2,6 +2,21 @@
 
 import * as React from "react";
 import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
   MoreHorizontal,
   Pin as PinIcon,
   PinOff,
@@ -31,6 +46,7 @@ type SidebarProps = {
   onSelectAttachment: (attachment: Attachment) => void;
   onTogglePin: (id: string) => void;
   onDeleteConversation: (id: string) => void;
+  onReorderPinned: (ids: string[]) => void;
 };
 
 export default function Sidebar({
@@ -42,8 +58,15 @@ export default function Sidebar({
   onSelectConversation,
   onSelectAttachment,
   onTogglePin,
-  onDeleteConversation
+  onDeleteConversation,
+  onReorderPinned
 }: SidebarProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 }
+    })
+  );
+
   const handleKeyPress = (event: React.KeyboardEvent, id: string) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -51,24 +74,51 @@ export default function Sidebar({
     }
   };
 
-  const renderConversation = (conversation: Conversation) => {
+  const renderConversation = (
+    conversation: Conversation,
+    sortable?: ReturnType<typeof useSortable>
+  ) => {
     const lastMessage =
       conversation.messages[conversation.messages.length - 1];
     const isActive = conversation.id === activeId;
+    const draggableStyle =
+      sortable && (sortable.transform || sortable.transition)
+        ? {
+            transform: sortable.transform
+              ? `translate3d(${sortable.transform.x}px, ${sortable.transform.y}px, 0) scale(${sortable.transform.scaleX}, ${sortable.transform.scaleY})`
+              : undefined,
+            transition: sortable.transition
+          }
+        : undefined;
+    const { onKeyDown: sortableKeyDown, ...sortableListeners } =
+      sortable?.listeners ?? {};
+    const draggableHandlers =
+      sortable?.attributes || sortableListeners
+        ? { ...(sortable?.attributes ?? {}), ...sortableListeners }
+        : {};
 
     return (
       <div
         key={conversation.id}
         role="button"
         tabIndex={0}
+        ref={sortable?.setNodeRef}
         className={cn(
           "group relative w-full rounded-2xl border px-4 py-3 text-left transition",
           isActive
             ? "border-active-border bg-active-bg text-active-text shadow-glow"
-            : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80"
+            : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80",
+          sortable ? "cursor-grab active:cursor-grabbing" : ""
         )}
         onClick={() => onSelectConversation(conversation.id)}
-        onKeyDown={(event) => handleKeyPress(event, conversation.id)}
+        onKeyDown={(event) => {
+          sortableKeyDown?.(event);
+          if (!event.defaultPrevented) {
+            handleKeyPress(event, conversation.id);
+          }
+        }}
+        style={draggableStyle}
+        {...draggableHandlers}
       >
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -141,6 +191,21 @@ export default function Sidebar({
     );
   };
 
+  const SortableConversation = ({ conversation }: { conversation: Conversation }) => {
+    const sortable = useSortable({ id: conversation.id });
+    return renderConversation(conversation, sortable);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = pinnedConversations.map((conversation) => conversation.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorderPinned(arrayMove(ids, oldIndex, newIndex));
+  };
+
   return (
     <aside className="flex h-full min-h-0 w-[clamp(220px,22vw,320px)] min-w-[220px] max-w-[320px] shrink-0 flex-col border-r border-border bg-panel/80">
       <div className="px-5 pb-4 pt-5">
@@ -198,17 +263,45 @@ export default function Sidebar({
       </div>
 
       <ScrollArea className="flex-1 px-3 pb-6">
-        <div className="space-y-4">
+        <div className="space-y-5">
           {pinnedConversations.length > 0 ? (
             <div className="space-y-2">
               <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
                 Pinned
               </div>
-              {pinnedConversations.map(renderConversation)}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
+              >
+                <SortableContext
+                  items={pinnedConversations.map((conversation) => conversation.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {pinnedConversations.map((conversation) => (
+                      <SortableConversation
+                        key={conversation.id}
+                        conversation={conversation}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </div>
           ) : null}
           <div className="space-y-2">
-            {conversations.map(renderConversation)}
+            <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+              Recent
+            </div>
+            {conversations.length === 0 ? (
+              <div className="px-2 text-xs text-muted">
+                No recent conversations yet.
+              </div>
+            ) : (
+              conversations.map((conversation) => renderConversation(conversation))
+            )}
           </div>
         </div>
       </ScrollArea>
