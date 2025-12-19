@@ -16,12 +16,18 @@ function pickSeededResponse(prompt: string) {
   return sampleResponses[seed % sampleResponses.length];
 }
 
-export async function* mockStreamAssistantReply(prompt: string) {
+export async function* mockStreamAssistantReply(
+  prompt: string,
+  useDocs: boolean
+) {
   // TODO: Replace with real streaming API call using apiBaseUrl.
   void apiBaseUrl;
   const intro = pickSeededResponse(prompt);
+  const modeHint = useDocs
+    ? "I'll lean on the documents you've shared."
+    : "I'll answer generally without pulling from your docs.";
   const body =
-    "\n\n" +
+    `\n\n${modeHint}\n\n` +
     "- Clarify intent\n" +
     "- Draft a minimal response\n" +
     "- Validate assumptions\n" +

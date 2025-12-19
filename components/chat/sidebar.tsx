@@ -1,30 +1,211 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Stethoscope } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  MoreHorizontal,
+  Pin as PinIcon,
+  PinOff,
+  Plus,
+  Stethoscope,
+  Trash2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { badgeVariants } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Attachment, Conversation } from "@/components/chat/chat-app";
 
 type SidebarProps = {
+  pinnedConversations: Conversation[];
   conversations: Conversation[];
   activeId: string;
   attachments: Attachment[];
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onSelectAttachment: (attachment: Attachment) => void;
+  onTogglePin: (id: string) => void;
+  onDeleteConversation: (id: string) => void;
+  onReorderPinned: (ids: string[]) => void;
 };
 
 export default function Sidebar({
+  pinnedConversations,
   conversations,
   activeId,
   attachments,
   onNewChat,
   onSelectConversation,
-  onSelectAttachment
+  onSelectAttachment,
+  onTogglePin,
+  onDeleteConversation,
+  onReorderPinned
 }: SidebarProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 }
+    })
+  );
+
+  const handleKeyPress = (event: React.KeyboardEvent, id: string) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelectConversation(id);
+    }
+  };
+
+  const renderConversation = (
+    conversation: Conversation,
+    sortable?: ReturnType<typeof useSortable>
+  ) => {
+    const lastMessage =
+      conversation.messages[conversation.messages.length - 1];
+    const isActive = conversation.id === activeId;
+    const draggableStyle =
+      sortable && (sortable.transform || sortable.transition)
+        ? {
+            transform: sortable.transform
+              ? `translate3d(${sortable.transform.x}px, ${sortable.transform.y}px, 0) scale(${sortable.transform.scaleX}, ${sortable.transform.scaleY})`
+              : undefined,
+            transition: sortable.transition
+          }
+        : undefined;
+    const { onKeyDown: sortableKeyDown, ...sortableListeners } =
+      sortable?.listeners ?? {};
+    const draggableHandlers =
+      sortable?.attributes || sortableListeners
+        ? { ...(sortable?.attributes ?? {}), ...sortableListeners }
+        : {};
+
+    return (
+      <div
+        key={conversation.id}
+        role="button"
+        tabIndex={0}
+        ref={sortable?.setNodeRef}
+        className={cn(
+          "group relative w-full rounded-2xl border px-4 py-3 text-left transition",
+          isActive
+            ? "border-active-border bg-active-bg text-active-text shadow-glow"
+            : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80",
+          sortable ? "cursor-grab active:cursor-grabbing" : ""
+        )}
+        onClick={() => onSelectConversation(conversation.id)}
+        onKeyDown={(event) => {
+          sortableKeyDown?.(event);
+          if (!event.defaultPrevented) {
+            handleKeyPress(event, conversation.id);
+          }
+        }}
+        style={draggableStyle}
+        {...draggableHandlers}
+      >
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div
+              className={cn(
+                "text-sm font-semibold",
+                isActive ? "text-active-text" : "text-ink"
+              )}
+            >
+              {conversation.title}
+            </div>
+            <div
+              className={cn(
+                "mt-1 text-xs",
+                isActive ? "text-active-text/80" : "text-muted"
+              )}
+            >
+              {lastMessage?.content ?? "No messages yet."}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "rounded-full p-1 text-muted transition hover:bg-accent/50 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-strong/40",
+                  "opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                )}
+                aria-label="Conversation actions"
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="right"
+              align="end"
+              sideOffset={8}
+              onClick={(event) => event.stopPropagation()}
+              className="z-50"
+            >
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onTogglePin(conversation.id);
+                }}
+              >
+                {conversation.isPinned ? (
+                  <PinOff className="h-4 w-4" />
+                ) : (
+                  <PinIcon className="h-4 w-4" />
+                )}
+                <span>{conversation.isPinned ? "Unpin" : "Pin"}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  onDeleteConversation(conversation.id);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    );
+  };
+
+  const SortableConversation = ({ conversation }: { conversation: Conversation }) => {
+    const sortable = useSortable({ id: conversation.id });
+    return renderConversation(conversation, sortable);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = pinnedConversations.map((conversation) => conversation.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorderPinned(arrayMove(ids, oldIndex, newIndex));
+  };
+
   return (
     <aside className="flex h-full min-h-0 w-[clamp(220px,22vw,320px)] min-w-[220px] max-w-[320px] shrink-0 flex-col border-r border-border bg-panel/80">
       <div className="px-5 pb-4 pt-5">
@@ -82,42 +263,46 @@ export default function Sidebar({
       </div>
 
       <ScrollArea className="flex-1 px-3 pb-6">
-        <div className="space-y-2">
-          {conversations.map((conversation) => {
-            const lastMessage =
-              conversation.messages[conversation.messages.length - 1];
-            const isActive = conversation.id === activeId;
-
-            return (
-              <button
-                key={conversation.id}
-                className={cn(
-                  "w-full rounded-2xl border px-4 py-3 text-left transition",
-                  isActive
-                    ? "border-active-border bg-active-bg text-active-text shadow-glow"
-                    : "border-chip/60 bg-chip/70 text-chip-text hover:bg-chip/80"
-                )}
-                onClick={() => onSelectConversation(conversation.id)}
+        <div className="space-y-5">
+          {pinnedConversations.length > 0 ? (
+            <div className="space-y-2">
+              <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+                Pinned
+              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
               >
-                <div
-                  className={cn(
-                    "text-sm font-semibold",
-                    isActive ? "text-active-text" : "text-ink"
-                  )}
+                <SortableContext
+                  items={pinnedConversations.map((conversation) => conversation.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  {conversation.title}
-                </div>
-                <div
-                  className={cn(
-                    "mt-1 text-xs",
-                    isActive ? "text-active-text/80" : "text-muted"
-                  )}
-                >
-                  {lastMessage?.content ?? "No messages yet."}
-                </div>
-              </button>
-            );
-          })}
+                  <div className="space-y-2">
+                    {pinnedConversations.map((conversation) => (
+                      <SortableConversation
+                        key={conversation.id}
+                        conversation={conversation}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          ) : null}
+          <div className="space-y-2">
+            <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+              Recent
+            </div>
+            {conversations.length === 0 ? (
+              <div className="px-2 text-xs text-muted">
+                No recent conversations yet.
+              </div>
+            ) : (
+              conversations.map((conversation) => renderConversation(conversation))
+            )}
+          </div>
         </div>
       </ScrollArea>
     </aside>
