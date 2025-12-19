@@ -33,6 +33,8 @@ export type Conversation = {
   attachments: Attachment[];
   createdAt: number;
   lastUpdatedAt: number;
+  isPinned: boolean;
+  pinnedAt: number | null;
 };
 
 const seedTimestamp = Date.now();
@@ -74,7 +76,9 @@ const seedConversations: Conversation[] = [
       }
     ],
     createdAt: seedTimestamp - 1000 * 60 * 60 * 2,
-    lastUpdatedAt: seedTimestamp - 1000 * 60 * 45
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 45,
+    isPinned: false,
+    pinnedAt: null
   },
   {
     id: "conv-research",
@@ -89,7 +93,9 @@ const seedConversations: Conversation[] = [
       }
     ],
     createdAt: seedTimestamp - 1000 * 60 * 60 * 6,
-    lastUpdatedAt: seedTimestamp - 1000 * 60 * 60 * 3
+    lastUpdatedAt: seedTimestamp - 1000 * 60 * 60 * 3,
+    isPinned: false,
+    pinnedAt: null
   }
 ];
 
@@ -98,6 +104,21 @@ const createId = () =>
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
 
+const sortPinnedConversations = (list: Conversation[]) =>
+  [...list]
+    .filter((conversation) => conversation.isPinned)
+    .sort((a, b) => (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0));
+
+const sortUnpinnedConversations = (list: Conversation[]) =>
+  [...list]
+    .filter((conversation) => !conversation.isPinned)
+    .sort((a, b) => {
+      if (a.lastUpdatedAt !== b.lastUpdatedAt) {
+        return b.lastUpdatedAt - a.lastUpdatedAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+
 export default function ChatApp() {
   const { theme, setTheme } = useTheme();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
@@ -105,6 +126,10 @@ export default function ChatApp() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [selectedAttachment, setSelectedAttachment] =
     React.useState<Attachment | null>(null);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const [toastMessage, setToastMessage] = React.useState<string | null>(null);
   const [isWideLayout, setIsWideLayout] = React.useState(() => {
     if (typeof window === "undefined") return true;
     return window.matchMedia("(min-width: 900px)").matches;
@@ -115,32 +140,9 @@ export default function ChatApp() {
   );
   const [activeId, setActiveId] = React.useState(seedConversations[0].id);
 
-  const activeConversation = conversations.find(
-    (conversation) => conversation.id === activeId
-  );
-  const sortedConversations = React.useMemo(() => {
-    return [...conversations].sort((a, b) => {
-      if (a.lastUpdatedAt !== b.lastUpdatedAt) {
-        return b.lastUpdatedAt - a.lastUpdatedAt;
-      }
-      return b.createdAt - a.createdAt;
-    });
-  }, [conversations]);
-
-  const updateConversation = React.useCallback(
-    (id: string, updater: (conversation: Conversation) => Conversation) => {
-      setConversations((prev) =>
-        prev.map((conversation) =>
-          conversation.id === id ? updater(conversation) : conversation
-        )
-      );
-    },
-    []
-  );
-
-  const handleNewChat = () => {
+  const createConversation = React.useCallback((): Conversation => {
     const now = Date.now();
-    const newConversation: Conversation = {
+    return {
       id: createId(),
       title: "New chat",
       attachments: [],
@@ -153,8 +155,47 @@ export default function ChatApp() {
         }
       ],
       createdAt: now,
-      lastUpdatedAt: now
+      lastUpdatedAt: now,
+      isPinned: false,
+      pinnedAt: null
     };
+  }, []);
+
+  const activeConversation = conversations.find(
+    (conversation) => conversation.id === activeId
+  );
+  const pinnedConversations = React.useMemo(
+    () => sortPinnedConversations(conversations),
+    [conversations]
+  );
+  const unpinnedConversations = React.useMemo(
+    () => sortUnpinnedConversations(conversations),
+    [conversations]
+  );
+
+  const updateConversation = React.useCallback(
+    (id: string, updater: (conversation: Conversation) => Conversation) => {
+      setConversations((prev) =>
+        prev.map((conversation) =>
+          conversation.id === id ? updater(conversation) : conversation
+        )
+      );
+    },
+    []
+  );
+
+  const showToast = React.useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 2200);
+  }, []);
+
+  const handleNewChat = () => {
+    const newConversation = createConversation();
 
     setConversations((prev) => [newConversation, ...prev]);
     setActiveId(newConversation.id);
@@ -252,6 +293,57 @@ export default function ChatApp() {
     setIsSidebarOpen(false);
   };
 
+  const handleTogglePin = (id: string) => {
+    const conversation = conversations.find((item) => item.id === id);
+    if (!conversation) return;
+
+    if (conversation.isPinned) {
+      updateConversation(id, (current) => ({
+        ...current,
+        isPinned: false,
+        pinnedAt: null,
+        lastUpdatedAt: Date.now()
+      }));
+      return;
+    }
+
+    const pinnedCount = conversations.filter((item) => item.isPinned).length;
+    if (pinnedCount >= 5) {
+      showToast("Max 5 pinned conversations");
+      return;
+    }
+
+    const now = Date.now();
+    updateConversation(id, (current) => ({
+      ...current,
+      isPinned: true,
+      pinnedAt: now,
+      lastUpdatedAt: now
+    }));
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    setConversations((prev) => {
+      const nextConversations = prev.filter(
+        (conversation) => conversation.id !== id
+      );
+      if (activeId === id) {
+        if (nextConversations.length === 0) {
+          const freshConversation = createConversation();
+          setActiveId(freshConversation.id);
+          return [freshConversation];
+        }
+
+        const nextSorted = [
+          ...sortPinnedConversations(nextConversations),
+          ...sortUnpinnedConversations(nextConversations)
+        ];
+        setActiveId(nextSorted[0].id);
+      }
+      return nextConversations;
+    });
+  };
+
   const handleOpenAttachment = (attachment: Attachment) => {
     setSelectedAttachment(attachment);
     setIsSidebarOpen(false);
@@ -302,6 +394,14 @@ export default function ChatApp() {
     };
   }, []);
 
+  React.useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleThemeSelect = (value: Theme) => {
     setTheme(value);
     setIsSettingsOpen(false);
@@ -309,15 +409,25 @@ export default function ChatApp() {
 
   return (
     <div className="relative flex h-full w-full min-w-0 overflow-hidden border border-border bg-panel/70 shadow-soft backdrop-blur">
+      {toastMessage ? (
+        <div className="pointer-events-none fixed left-1/2 top-4 z-[99] w-full max-w-md -translate-x-1/2 px-4">
+          <div className="rounded-2xl border border-border bg-card/90 px-4 py-3 text-sm text-ink shadow-soft">
+            {toastMessage}
+          </div>
+        </div>
+      ) : null}
       {!isViewerOpen ? (
         <div className="hidden md:flex">
           <Sidebar
-            conversations={sortedConversations}
+            pinnedConversations={pinnedConversations}
+            conversations={unpinnedConversations}
             activeId={activeId}
             attachments={activeConversation?.attachments ?? []}
             onNewChat={handleNewChat}
             onSelectConversation={handleSelectConversation}
             onSelectAttachment={handleOpenAttachment}
+            onTogglePin={handleTogglePin}
+            onDeleteConversation={handleDeleteConversation}
           />
         </div>
       ) : null}
@@ -331,12 +441,15 @@ export default function ChatApp() {
           />
           <div className="relative z-10 h-full">
             <Sidebar
-              conversations={sortedConversations}
+              pinnedConversations={pinnedConversations}
+              conversations={unpinnedConversations}
               activeId={activeId}
               attachments={activeConversation?.attachments ?? []}
               onNewChat={handleNewChat}
               onSelectConversation={handleSelectConversation}
               onSelectAttachment={handleOpenAttachment}
+              onTogglePin={handleTogglePin}
+              onDeleteConversation={handleDeleteConversation}
             />
           </div>
         </div>
