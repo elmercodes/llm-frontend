@@ -27,6 +27,8 @@ export type Attachment = {
   url: string;
 };
 
+export type AIModel = "gpt-5-nano" | "Qwen3";
+
 export type Conversation = {
   id: string;
   title: string;
@@ -145,6 +147,8 @@ export default function ChatApp() {
   const [pinnedOrder, setPinnedOrder] = React.useState<string[]>([]);
   const [useDocs, setUseDocs] = React.useState<boolean>(true);
   const [mounted, setMounted] = React.useState(false);
+  const [selectedModel, setSelectedModel] =
+    React.useState<AIModel>("gpt-5-nano");
 
   const [conversations, setConversations] = React.useState<Conversation[]>(
     seedConversations
@@ -257,6 +261,7 @@ export default function ChatApp() {
     if (!activeConversation) return;
     const trimmed = content.trim();
     if (!trimmed) return;
+    const model = selectedModel;
 
     const conversationId = activeConversation.id;
     const now = Date.now();
@@ -279,7 +284,7 @@ export default function ChatApp() {
       lastUpdatedAt: now
     }));
 
-    for await (const chunk of mockStreamAssistantReply(trimmed, shouldUseDocs)) {
+    for await (const chunk of mockStreamAssistantReply(trimmed, shouldUseDocs, model)) {
       updateConversation(conversationId, (conversation) => ({
         ...conversation,
         messages: conversation.messages.map((message) =>
@@ -445,6 +450,14 @@ export default function ChatApp() {
   }, []);
 
   React.useEffect(() => {
+    if (!mounted) return;
+    const stored = window.localStorage.getItem("preferredModel");
+    if (stored === "gpt-5-nano" || stored === "Qwen3") {
+      setSelectedModel(stored);
+    }
+  }, [mounted]);
+
+  React.useEffect(() => {
     return () => {
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
@@ -461,6 +474,11 @@ export default function ChatApp() {
     if (!mounted) return;
     window.localStorage.setItem("useDocsPreference", useDocs ? "true" : "false");
   }, [useDocs, mounted]);
+
+  React.useEffect(() => {
+    if (!mounted) return;
+    window.localStorage.setItem("preferredModel", selectedModel);
+  }, [selectedModel, mounted]);
 
   React.useEffect(() => {
     setPinnedOrder((prev) => {
@@ -497,12 +515,14 @@ export default function ChatApp() {
             conversations={unpinnedConversations}
             activeId={activeId}
             attachments={activeConversation?.attachments ?? []}
+            selectedModel={selectedModel}
             onNewChat={handleNewChat}
             onSelectConversation={handleSelectConversation}
             onSelectAttachment={handleOpenAttachment}
             onTogglePin={handleTogglePin}
             onDeleteConversation={handleDeleteConversation}
             onReorderPinned={handleReorderPinned}
+            onSelectModel={setSelectedModel}
           />
         </div>
       ) : null}
@@ -520,12 +540,14 @@ export default function ChatApp() {
               conversations={unpinnedConversations}
               activeId={activeId}
               attachments={activeConversation?.attachments ?? []}
+              selectedModel={selectedModel}
               onNewChat={handleNewChat}
               onSelectConversation={handleSelectConversation}
               onSelectAttachment={handleOpenAttachment}
               onTogglePin={handleTogglePin}
               onDeleteConversation={handleDeleteConversation}
               onReorderPinned={handleReorderPinned}
+              onSelectModel={setSelectedModel}
             />
           </div>
         </div>

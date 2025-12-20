@@ -21,6 +21,8 @@ import {
   Pin as PinIcon,
   PinOff,
   Plus,
+  Check,
+  ChevronDown,
   Stethoscope,
   Trash2
 } from "lucide-react";
@@ -34,19 +36,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import type { Attachment, Conversation } from "@/components/chat/chat-app";
+import type {
+  AIModel,
+  Attachment,
+  Conversation
+} from "@/components/chat/chat-app";
 
 type SidebarProps = {
   pinnedConversations: Conversation[];
   conversations: Conversation[];
   activeId: string;
   attachments: Attachment[];
+  selectedModel: AIModel;
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
   onSelectAttachment: (attachment: Attachment) => void;
   onTogglePin: (id: string) => void;
   onDeleteConversation: (id: string) => void;
   onReorderPinned: (ids: string[]) => void;
+  onSelectModel: (model: AIModel) => void;
 };
 
 export default function Sidebar({
@@ -54,13 +62,16 @@ export default function Sidebar({
   conversations,
   activeId,
   attachments,
+  selectedModel,
   onNewChat,
   onSelectConversation,
   onSelectAttachment,
   onTogglePin,
   onDeleteConversation,
-  onReorderPinned
+  onReorderPinned,
+  onSelectModel
 }: SidebarProps) {
+  const modelOptions: AIModel[] = ["gpt-5-nano", "Qwen3"];
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 }
@@ -253,6 +264,49 @@ export default function Sidebar({
               </button>
             ))
           )}
+        </div>
+      </div>
+
+      <div className="px-5 pb-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted">
+          AI Model
+        </div>
+        <div className="mt-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-2xl border border-border bg-card/80 px-3 py-2.5 text-sm text-ink shadow-glow transition hover:border-accent hover:bg-accent/40"
+              >
+                <span className="truncate">{selectedModel}</span>
+                <ChevronDown className="h-4 w-4 text-muted" aria-hidden />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={8}
+              className="w-[220px]"
+            >
+              {modelOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    onSelectModel(option);
+                  }}
+                  className="flex items-center justify-between text-ink"
+                >
+                  <span>{option}</span>
+                  {selectedModel === option ? (
+                    <span className="flex items-center gap-1 rounded-full bg-accent/40 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
+                      <Check className="h-3 w-3" />
+                      Active
+                    </span>
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

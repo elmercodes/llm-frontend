@@ -18,10 +18,12 @@ function pickSeededResponse(prompt: string) {
 
 export async function* mockStreamAssistantReply(
   prompt: string,
-  useDocs: boolean
+  useDocs: boolean,
+  model: string
 ) {
   // TODO: Replace with real streaming API call using apiBaseUrl.
   void apiBaseUrl;
+  void model;
   const intro = pickSeededResponse(prompt);
   const modeHint = useDocs
     ? "I'll lean on the documents you've shared."
