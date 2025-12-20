@@ -28,6 +28,12 @@ The UI is designed to feel familiar to ChatGPT while remaining lightweight, exte
 - Dropdown in viewer header lets you switch between all attachments in the conversation
 - Dropdown always renders above document content (no z-index issues)
 
+### 🤖 AI Model Selector
+
+- Sidebar “AI Model” section between Attachments and Conversations
+- Dropdown defaults to `gpt-5-nano`, with `Qwen3` as an alternative
+- Selection is stored client-side (persisted) and ready to be passed to a backend when wired up
+
 ### 🎨 Theming
 
 - Light mode + Dark mode
@@ -119,13 +125,32 @@ Then open `http://localhost:3000`.
 
 ## Configuration
 
-The app reads an optional API base URL for future backend integration:
+The app is backend-agnostic and can run:
+- **Without OpenAI (default):** uses the built-in mock streaming API with no external calls.
+- **With OpenAI or another provider:** point the frontend at your backend; the UI will pass along the selected model once wired.
+
+Optional API base URL for your backend:
 
 ```
 NEXT_PUBLIC_API_BASE_URL=
 ```
 
-## Notes
-
-- The chat flow uses a mock streaming API (`lib/mockApi.ts`) with TODOs for real backend integration.
+Notes:
+- Expect a future `GET /api/models` endpoint to populate the sidebar model list (currently mocked in the UI).
+- The mock stream in `lib/mockApi.ts` is used when no backend is configured.
 - File uploads are UI-only for now and are stored in client state.
+- If your backend uses a separate embedding model (e.g., local vector DB) instead of an OpenAI embedding endpoint, keep it distinct from the chat model above; the UI only forwards the chat model selection and does not assume OpenAI embeddings.
+
+### Wiring to your backend
+
+When you add a backend, forward the selected model and user message. A minimal payload shape:
+
+```json
+{
+  "model": "gpt-5-nano",
+  "prompt": "<user text>",
+  "useDocs": true
+}
+```
+
+Use `NEXT_PUBLIC_API_BASE_URL` to point the frontend at your API; until then, the mock responder will stream locally.
